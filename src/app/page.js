@@ -1,1047 +1,744 @@
-import React, { useState, useEffect } from 'react';
+"use client";
 
-const Portfolio = () => {
-  const [scrollProgress, setScrollProgress] = useState(0);
-  const [showScrollTop, setShowScrollTop] = useState(false);
-  const [navbarScrolled, setNavbarScrolled] = useState(false);
+import { useState, useEffect, useRef } from 'react';
+import {
+  Menu,
+  X,
+  Github,
+  Linkedin,
+  Mail,
+  Phone,
+  MapPin,
+  Code2,
+  Palette,
+  Database,
+  Sparkles,
+  ArrowRight,
+  Check,
+  ExternalLink,
+  Eye,
+} from 'lucide-react';
 
+/* ═══════════════════════════════════════════
+   GLOBAL CSS – keyframes + utility classes
+   ═══════════════════════════════════════════ */
+const STYLES = `
+  /* ── fonts ── */
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Syne:wght@700;800&display=swap');
+
+  /* ── blob drifts ── */
+  @keyframes blob1 {
+    0%,100% { transform: translate(0,0) scale(1); }
+    33%     { transform: translate(-30px,20px) scale(1.05); }
+    66%     { transform: translate(20px,-25px) scale(0.95); }
+  }
+  @keyframes blob2 {
+    0%,100% { transform: translate(0,0) scale(1); }
+    40%     { transform: translate(25px,30px) scale(1.08); }
+    70%     { transform: translate(-20px,-15px) scale(0.92); }
+  }
+  @keyframes blob3 {
+    0%,100% { transform: translate(0,0) scale(1); }
+    50%     { transform: translate(-15px,-30px) scale(1.1); }
+  }
+
+  /* ── shimmer sweep across buttons ── */
+  @keyframes shimmer {
+    0%   { background-position: -200% center; }
+    100% { background-position:  200% center; }
+  }
+
+  /* ── CTA glow breathe ── */
+  @keyframes glowPulse {
+    0%,100% { box-shadow: 0 0 14px rgba(6,182,212,.32), 0 4px 22px rgba(6,182,212,.22); }
+    50%     { box-shadow: 0 0 28px rgba(6,182,212,.52), 0 4px 28px rgba(6,182,212,.34); }
+  }
+
+  /* ── gentle vertical float ── */
+  @keyframes floatY {
+    0%,100% { transform: translateY(0); }
+    50%     { transform: translateY(-7px); }
+  }
+
+  /* ── gradient colour-shift ── */
+  @keyframes gradientShift {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* ── pulsing ring behind profile ── */
+  @keyframes ringPulse {
+    0%   { transform: scale(1);    opacity: .55; }
+    100% { transform: scale(1.55); opacity: 0;   }
+  }
+
+  /* ── scroll-reveal: slide up ── */
+  @keyframes revealUp {
+    from { opacity:0; transform:translateY(38px); }
+    to   { opacity:1; transform:translateY(0);    }
+  }
+
+  /* ── scroll-reveal: slide from left ── */
+  @keyframes revealLeft {
+    from { opacity:0; transform:translateX(-42px); }
+    to   { opacity:1; transform:translateX(0);     }
+  }
+
+  /* ── scroll-reveal: slide from right ── */
+  @keyframes revealRight {
+    from { opacity:0; transform:translateX(42px); }
+    to   { opacity:1; transform:translateX(0);    }
+  }
+
+  /* ── scroll-reveal: scale pop ── */
+  @keyframes revealPop {
+    from { opacity:0; transform:scale(.88); }
+    to   { opacity:1; transform:scale(1);   }
+  }
+
+  /* ── typing cursor blink ── */
+  @keyframes caretBlink {
+    0%,100% { opacity:1; }
+    50%     { opacity:0; }
+  }
+
+  /* ── grid-dot pulse (background decoration) ── */
+  @keyframes dotPulse {
+    0%,100% { opacity:.08; transform:scale(1); }
+    50%     { opacity:.18; transform:scale(1.4); }
+  }
+
+  /* ── utility animation classes ── */
+  .anim-blob1 { animation: blob1 7s ease-in-out infinite; }
+  .anim-blob2 { animation: blob2 9s ease-in-out infinite; }
+  .anim-blob3 { animation: blob3 11s ease-in-out infinite; }
+
+  /* ── reveal base (hidden until JS adds .visible) ── */
+  .reveal        { opacity:0; transition: opacity .72s cubic-bezier(.22,.68,0,1.2), transform .72s cubic-bezier(.22,.68,0,1.2); }
+  .reveal.visible { opacity:1; transform:translateY(0) translateX(0) scale(1) !important; }
+
+  /* default directions – overridden per element */
+  .reveal-up            { transform: translateY(38px); }
+  .reveal-left          { transform: translateX(-42px); }
+  .reveal-right         { transform: translateX(42px); }
+  .reveal-pop           { transform: scale(.88); }
+
+  /* ── primary CTA ── */
+  .btn-primary {
+    position:relative; overflow:hidden;
+    background: linear-gradient(135deg,#0891b2,#06b6d4,#14b8a6,#0891b2);
+    background-size:200% 200%;
+    animation: gradientShift 3s ease infinite, glowPulse 2.4s ease-in-out infinite;
+    transition: transform .3s cubic-bezier(.22,.68,0,1.2), filter .3s;
+  }
+  .btn-primary::before {
+    content:''; position:absolute; inset:0;
+    background: linear-gradient(90deg,transparent 0%,rgba(255,255,255,.18) 50%,transparent 100%);
+    background-size:200% 100%;
+    animation: shimmer 2.2s linear infinite;
+    pointer-events:none;
+  }
+  .btn-primary:hover  { transform:translateY(-2px) scale(1.04); filter:brightness(1.15); }
+  .btn-primary:active { transform:translateY(0)    scale(.98);  }
+
+  /* ── outline CTA ── */
+  .btn-outline {
+    position:relative; overflow:hidden;
+    border:1px solid rgba(6,182,212,.4);
+    color:#67e8f9; background:rgba(6,182,212,.07);
+    transition: all .35s cubic-bezier(.22,.68,0,1.2);
+  }
+  .btn-outline::before {
+    content:''; position:absolute; inset:0;
+    background:linear-gradient(135deg,transparent 40%,rgba(6,182,212,.12) 60%,transparent 100%);
+    opacity:0; transition:opacity .4s;
+  }
+  .btn-outline:hover         { border-color:rgba(6,182,212,.75); background:rgba(6,182,212,.14); transform:translateY(-2px); box-shadow:0 0 20px rgba(6,182,212,.25),inset 0 1px 0 rgba(255,255,255,.08); }
+  .btn-outline:hover::before { opacity:1; }
+  .btn-outline:active        { transform:translateY(0); }
+
+  /* ── social pill ── */
+  .social-pill {
+    transition: all .35s cubic-bezier(.22,.68,0,1.2);
+    background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12); color:#e0e7ff;
+  }
+  .social-pill:hover { background:linear-gradient(135deg,rgba(6,182,212,.25),rgba(20,184,166,.25)); border-color:rgba(6,182,212,.5); transform:translateY(-2px) scale(1.06); box-shadow:0 4px 18px rgba(6,182,212,.3); }
+
+  /* ── nav icon ── */
+  .nav-icon { transition:all .3s cubic-bezier(.22,.68,0,1.2); color:#94a3b8; }
+  .nav-icon:hover { color:#06b6d4; transform:translateY(-2px) scale(1.18); filter:drop-shadow(0 2px 6px rgba(6,182,212,.4)); }
+
+  /* ── project overlay buttons ── */
+  .proj-btn {
+    transition:all .3s cubic-bezier(.22,.68,0,1.2);
+    background:rgba(255,255,255,.15); backdrop-filter:blur(6px);
+    border:1px solid rgba(255,255,255,.22); color:#fff;
+  }
+  .proj-btn:hover { background:rgba(255,255,255,.3); transform:scale(1.14); box-shadow:0 2px 14px rgba(0,0,0,.28); }
+
+  /* ── footer nav link ── */
+  .footer-link { position:relative; color:#64748b; transition:color .3s; }
+  .footer-link::after { content:''; position:absolute; bottom:-2px; left:0; width:0; height:1px; background:linear-gradient(90deg,#06b6d4,#14b8a6); transition:width .35s cubic-bezier(.22,.68,0,1.2); }
+  .footer-link:hover { color:#67e8f9; }
+  .footer-link:hover::after { width:100%; }
+
+  /* ── skill bar animated fill ── */
+  .skill-bar-fill { width:0 !important; transition: width 1.1s cubic-bezier(.22,.68,0,1.2); }
+  .skill-bar-fill.animate { /* width set via inline style in JS */ }
+
+  /* ── card tilt shadow ── */
+  .card-hover {
+    transition: transform .4s cubic-bezier(.22,.68,0,1.2), box-shadow .4s cubic-bezier(.22,.68,0,1.2);
+  }
+  .card-hover:hover { transform:translateY(-7px); }
+
+  /* ── typing caret ── */
+  .caret {
+    display:inline-block; width:3px; height:.85em;
+    background:#67e8f9; margin-left:4px; vertical-align:middle;
+    animation: caretBlink .9s step-end infinite;
+    border-radius:2px;
+  }
+
+  /* ── subtle grid-dot background ── */
+  .dot-grid {
+    position:absolute; inset:0; pointer-events:none; z-index:0;
+    background-image: radial-gradient(circle, rgba(6,182,212,.13) 1px, transparent 1px);
+    background-size:40px 40px;
+    mask-image: radial-gradient(ellipse 70% 60% at center, black 30%, transparent 100%);
+    -webkit-mask-image: radial-gradient(ellipse 70% 60% at center, black 30%, transparent 100%);
+  }
+`;
+
+/* ═══════════════════════════════════════════
+   HOOK – IntersectionObserver reveal
+   ═══════════════════════════════════════════ */
+function useReveal(threshold = 0.15) {
+  const ref = useRef(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) setVisible(true); },
+      { threshold }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [threshold]);
+  return [ref, visible];
+}
+
+/* ═══════════════════════════════════════════
+   HOOK – animate skill bars when in view
+   ═══════════════════════════════════════════ */
+function useSkillBarReveal() {
+  const ref = useRef(null);
+  const [animate, setAnimate] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) setAnimate(true); },
+      { threshold: 0.2 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+  return [ref, animate];
+}
+
+/* ═══════════════════════════════════════════
+   HOOK – typing effect for hero name
+   ═══════════════════════════════════════════ */
+function useTyping(text, speed = 62) {
+  const [displayed, setDisplayed] = useState('');
+  const [done, setDone] = useState(false);
+  useEffect(() => {
+    let i = 0;
+    const timer = setInterval(() => {
+      i++;
+      setDisplayed(text.slice(0, i));
+      if (i >= text.length) { clearInterval(timer); setDone(true); }
+    }, speed);
+    return () => clearInterval(timer);
+  }, [text, speed]);
+  return [displayed, done];
+}
+
+/* ═══════════════════════════════════════════
+   APP
+   ═══════════════════════════════════════════ */
+function App() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState('home');
+
+  /* typing name */
+  const [typedName, typingDone] = useTyping('Farhan Tolkar', 68);
+
+  /* scroll spy – UNCHANGED logic */
   useEffect(() => {
     const handleScroll = () => {
-      // Progress bar
-      const progress = (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100;
-      setScrollProgress(progress);
-
-      // Scroll to top button
-      setShowScrollTop(window.scrollY > 500);
-
-      // Navbar shadow
-      setNavbarScrolled(window.scrollY > 50);
+      const sections = ['home', 'about', 'projects', 'skills', 'contact'];
+      const scrollPosition = window.scrollY + 100;
+      for (const section of sections) {
+        const el = document.getElementById(section);
+        if (el) {
+          if (scrollPosition >= el.offsetTop && scrollPosition < el.offsetTop + el.offsetHeight) {
+            setActiveSection(section);
+            break;
+          }
+        }
+      }
     };
-
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  const scrollToSection = (id) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+    setIsMenuOpen(false);
   };
 
-  const handleMobileMenu = () => {
-    alert('Mobile menu - implement as needed');
-  };
+  /* ── data – UNCHANGED ── */
+  const projects = [
+    { title:'RedBus',            description:'UI/UX design focused on clean layoutsand smooth user flow.',    image:'./Redbus.png',    tags:['Tailwind CSS','HTML'] },
+    { title:'Zomato App Clone',  description:'UI/UX design focused on clean layoutsand smooth user flow.',  image:'./Zomato.png',    tags:['Figma','UI Design'] },
+    { title:'Travel Dashboard',  description:'UI/UX design focused on clean layoutsand smooth user flow.',  image:'./Travel.png',    tags:['Figma','UI Design'] },
+    { title:'Snapdeal Clone',    description:'UI/UX design focused on clean layoutsand smooth user flow.',  image:'./snapdeal.png',  tags:['Tailwind CSS , HTML'] },
+    { title:'Gozoop Social',     description:'UI/UX design focused on clean layoutsand smooth user flow.',      image:'./gozoop.png',    tags:['Figma','UI Design'] },
+  ];
 
+  const skills = [
+    { name:'Tailwind CSS',      level:75, icon:<Code2    className="w-5 h-5"/> },
+    { name:'HTML & CSS',        level:80, icon:<Code2    className="w-5 h-5"/> },
+    { name:'WordPress',         level:80, icon:<Palette  className="w-5 h-5"/> },
+    { name:'JavaScript',        level:80, icon:<Palette  className="w-5 h-5"/> },
+    { name:'Figma',             level:85, icon:<Code2    className="w-5 h-5"/> },
+    { name:'React & Next.js',   level:25, icon:<Database className="w-5 h-5"/> },
+    { name:'UI/UX Design',      level:89, icon:<Palette  className="w-5 h-5"/> },
+    { name:'Node.js & Express', level:20, icon:<Database className="w-5 h-5"/> },
+  ];
+
+  /* gradient text reusable style */
+  const gTxt = { background:'linear-gradient(135deg,#67e8f9,#14b8a6,#fb923c)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' };
+
+  /* ── section reveal refs ── */
+  const [aboutRef,   aboutVis]   = useReveal(0.12);
+  const [cardsRef,   cardsVis]   = useReveal(0.1);
+  const [journeyRef, journeyVis] = useReveal(0.15);
+  const [projRef,    projVis]    = useReveal(0.08);
+  const [skillsRef,  skillsVis]  = useSkillBarReveal();
+  const [featsRef,   featsVis]   = useReveal(0.15);
+  const [contactRef, contactVis] = useReveal(0.12);
+
+  /* ═══ RENDER ═══ */
   return (
-    <div className="pattern-bg">
-      <style jsx>{`
-        * {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
-        }
-
-        body {
-          font-family: 'Inter', sans-serif;
-          background: #ffffff;
-          color: #1a1a2e;
-        }
-
-        .font-display {
-          font-family: 'Playfair Display', serif;
-        }
-
-        html {
-          scroll-behavior: smooth;
-        }
-
-        /* Enhanced Light Gradient Background */
-        .light-gradient-bg {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-          position: relative;
-          overflow: hidden;
-        }
-
-        .light-gradient-bg::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: 
-            radial-gradient(circle at 20% 30%, rgba(102, 126, 234, 0.3) 0%, transparent 50%),
-            radial-gradient(circle at 80% 70%, rgba(240, 147, 251, 0.3) 0%, transparent 50%),
-            radial-gradient(circle at 50% 50%, rgba(118, 75, 162, 0.2) 0%, transparent 50%);
-          animation: gradientShift 15s ease infinite;
-        }
-
-        @keyframes gradientShift {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.8; transform: scale(1.1); }
-        }
-
-        /* Advanced Pattern Background */
-        .pattern-bg {
-          background-color: #ffffff;
-          background-image: 
-            radial-gradient(circle at 25px 25px, rgba(102, 126, 234, 0.05) 2%, transparent 0%),
-            radial-gradient(circle at 75px 75px, rgba(118, 75, 162, 0.05) 2%, transparent 0%);
-          background-size: 100px 100px;
-          position: relative;
-        }
-
-        .pattern-bg::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: linear-gradient(180deg, transparent 0%, rgba(102, 126, 234, 0.02) 100%);
-          pointer-events: none;
-        }
-
-        /* Animated Gradient Text */
-        .gradient-text {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-          background-size: 200% 200%;
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-          animation: gradientFlow 6s ease infinite;
-        }
-
-        @keyframes gradientFlow {
-          0%, 100% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-        }
-
-        /* Enhanced Reveal Animation */
-        @keyframes revealUp {
-          from {
-            opacity: 0;
-            transform: translateY(60px) scale(0.95);
-            filter: blur(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-            filter: blur(0);
-          }
-        }
-
-        .reveal {
-          opacity: 0;
-          animation: revealUp 1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-        }
-
-        .delay-100 { animation-delay: 0.1s; }
-        .delay-200 { animation-delay: 0.2s; }
-        .delay-300 { animation-delay: 0.3s; }
-        .delay-400 { animation-delay: 0.4s; }
-        .delay-500 { animation-delay: 0.5s; }
-        .delay-600 { animation-delay: 0.6s; }
-
-        /* Enhanced Card with Gradient Border */
-        .card-light {
-          background: #ffffff;
-          position: relative;
-          border-radius: 1rem;
-          transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .card-light::before {
-          content: '';
-          position: absolute;
-          inset: 0;
-          border-radius: 1rem;
-          padding: 2px;
-          background: linear-gradient(135deg, #667eea, #764ba2, #f093fb);
-          -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-          -webkit-mask-composite: xor;
-          mask-composite: exclude;
-          opacity: 0.3;
-          transition: opacity 0.5s ease;
-        }
-
-        .card-light:hover::before {
-          opacity: 1;
-        }
-
-        .card-light:hover {
-          transform: translateY(-12px) scale(1.02);
-          box-shadow: 
-            0 20px 60px rgba(102, 126, 234, 0.3),
-            0 0 40px rgba(240, 147, 251, 0.2);
-        }
-
-        /* Gradient Button with Animation */
-        .btn-primary-light {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-          background-size: 200% 200%;
-          color: white;
-          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-          position: relative;
-          overflow: hidden;
-          animation: gradientFlow 6s ease infinite;
-        }
-
-        .btn-primary-light::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: -100%;
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-          transition: left 0.6s ease;
-        }
-
-        .btn-primary-light:hover::before {
-          left: 100%;
-        }
-
-        .btn-primary-light:hover {
-          transform: translateY(-3px) scale(1.05);
-          box-shadow: 
-            0 15px 40px rgba(102, 126, 234, 0.5),
-            0 0 30px rgba(240, 147, 251, 0.3);
-        }
-
-        .btn-primary-light:active {
-          transform: translateY(-1px) scale(1.02);
-        }
-
-        /* Gradient Outline Button */
-        .btn-outline-light {
-          position: relative;
-          background: white;
-          color: #667eea;
-          transition: all 0.4s ease;
-          overflow: hidden;
-        }
-
-        .btn-outline-light::before {
-          content: '';
-          position: absolute;
-          inset: 0;
-          border-radius: inherit;
-          padding: 2px;
-          background: linear-gradient(135deg, #667eea, #764ba2, #f093fb);
-          background-size: 200% 200%;
-          -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-          -webkit-mask-composite: xor;
-          mask-composite: exclude;
-          animation: gradientFlow 6s ease infinite;
-        }
-
-        .btn-outline-light::after {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(135deg, #667eea, #764ba2, #f093fb);
-          opacity: 0;
-          transition: opacity 0.4s ease;
-          z-index: -1;
-        }
-
-        .btn-outline-light:hover::after {
-          opacity: 1;
-        }
-
-        .btn-outline-light:hover {
-          color: white;
-          transform: translateY(-3px);
-          box-shadow: 0 15px 35px rgba(102, 126, 234, 0.3);
-        }
-
-        /* Animated Progress Bar */
-        .progress-bar {
-          position: fixed;
-          top: 0;
-          left: 0;
-          height: 4px;
-          background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
-          background-size: 200% 100%;
-          z-index: 9999;
-          transition: width 0.1s ease;
-          animation: gradientSlide 3s linear infinite;
-          box-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
-        }
-
-        @keyframes gradientSlide {
-          0% { background-position: 0% 0%; }
-          100% { background-position: 200% 0%; }
-        }
-
-        /* Enhanced Project Card Overlay */
-        .project-overlay {
-          background: linear-gradient(to top, 
-            rgba(102, 126, 234, 0.98) 0%, 
-            rgba(118, 75, 162, 0.95) 50%,
-            rgba(240, 147, 251, 0.9) 100%);
-          opacity: 0;
-          transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .project-card:hover .project-overlay {
-          opacity: 1;
-        }
-
-        .project-content {
-          transform: translateY(30px);
-          transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .project-card:hover .project-content {
-          transform: translateY(0);
-        }
-
-        /* Gradient Border Image */
-        .gradient-border-image {
-          position: relative;
-          border-radius: 1.5rem;
-          overflow: hidden;
-        }
-
-        .gradient-border-image::before {
-          content: '';
-          position: absolute;
-          inset: -3px;
-          background: linear-gradient(135deg, #667eea, #764ba2, #f093fb, #667eea);
-          background-size: 300% 300%;
-          border-radius: 1.5rem;
-          z-index: -1;
-          animation: borderGlow 4s ease infinite;
-        }
-
-        @keyframes borderGlow {
-          0%, 100% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-        }
-
-        /* Floating Animation */
-        @keyframes float {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          33% { transform: translateY(-20px) rotate(2deg); }
-          66% { transform: translateY(-10px) rotate(-2deg); }
-        }
-
-        .float {
-          animation: float 6s ease-in-out infinite;
-        }
-
-        /* Service Icon with Gradient */
-        .service-icon {
-          transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-          position: relative;
-        }
-
-        .service-icon::before {
-          content: '';
-          position: absolute;
-          inset: -5px;
-          background: linear-gradient(135deg, #667eea, #764ba2, #f093fb);
-          border-radius: inherit;
-          opacity: 0;
-          filter: blur(20px);
-          transition: opacity 0.5s ease;
-          z-index: -1;
-        }
-
-        .service-card:hover .service-icon {
-          transform: scale(1.15) rotate(5deg);
-        }
-
-        .service-card:hover .service-icon::before {
-          opacity: 0.7;
-        }
-
-        /* Enhanced Skill Badge */
-        .skill-badge {
-          display: inline-flex;
-          align-items: center;
-          padding: 0.6rem 1.2rem;
-          background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-          border-radius: 9999px;
-          font-size: 0.875rem;
-          font-weight: 600;
-          position: relative;
-          overflow: hidden;
-          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .skill-badge::before {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(135deg, #667eea, #764ba2, #f093fb);
-          opacity: 0;
-          transition: opacity 0.4s ease;
-        }
-
-        .skill-badge span {
-          position: relative;
-          z-index: 1;
-          color: #667eea;
-          transition: color 0.4s ease;
-        }
-
-        .skill-badge:hover::before {
-          opacity: 1;
-        }
-
-        .skill-badge:hover span {
-          color: white;
-        }
-
-        .skill-badge:hover {
-          transform: translateY(-3px) scale(1.05);
-          box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
-        }
-
-        /* Scroll Indicator */
-        @keyframes bounce {
-          0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-          40% { transform: translateY(-15px); }
-          60% { transform: translateY(-8px); }
-        }
-
-        .scroll-indicator {
-          animation: bounce 2s infinite;
-          filter: drop-shadow(0 0 10px rgba(102, 126, 234, 0.5));
-        }
-
-        /* Enhanced Navbar */
-        .navbar-light {
-          background: rgba(255, 255, 255, 0.98);
-          backdrop-filter: blur(20px) saturate(180%);
-          border-bottom: 1px solid rgba(102, 126, 234, 0.1);
-          transition: all 0.3s ease;
-        }
-
-        .navbar-light.scrolled {
-          box-shadow: 
-            0 4px 30px rgba(102, 126, 234, 0.15),
-            0 0 20px rgba(240, 147, 251, 0.1);
-        }
-
-        /* Stats Animation */
-        @keyframes countUp {
-          from { 
-            opacity: 0; 
-            transform: translateY(30px) scale(0.8);
-          }
-          to { 
-            opacity: 1; 
-            transform: translateY(0) scale(1);
-          }
-        }
-
-        .stat-number {
-          animation: countUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-        }
-
-        /* Image Hover with Gradient Overlay */
-        .image-hover {
-          transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-          position: relative;
-        }
-
-        .image-hover::after {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(240, 147, 251, 0.2));
-          opacity: 0;
-          transition: opacity 0.6s ease;
-        }
-
-        .image-hover:hover {
-          transform: scale(1.08);
-        }
-
-        .image-hover:hover::after {
-          opacity: 1;
-        }
-
-        /* Section Title with Animated Underline */
-        .section-title {
-          position: relative;
-          display: inline-block;
-          padding-bottom: 1rem;
-        }
-
-        .section-title::after {
-          content: '';
-          position: absolute;
-          bottom: 0;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 80px;
-          height: 5px;
-          background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
-          background-size: 200% 100%;
-          border-radius: 3px;
-          animation: gradientSlide 3s linear infinite;
-          box-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
-        }
-
-        /* Decorative Blob */
-        .blob {
-          border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
-          animation: blobMorph 8s ease-in-out infinite;
-        }
-
-        @keyframes blobMorph {
-          0%, 100% { border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; }
-          25% { border-radius: 58% 42% 75% 25% / 76% 46% 54% 24%; }
-          50% { border-radius: 50% 50% 33% 67% / 55% 27% 73% 45%; }
-          75% { border-radius: 33% 67% 58% 42% / 63% 68% 32% 37%; }
-        }
-
-        /* Pulse Effect */
-        @keyframes pulse {
-          0%, 100% { transform: scale(1); opacity: 1; }
-          50% { transform: scale(1.1); opacity: 0.8; }
-        }
-
-        .pulse-ring {
-          animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-
-        /* Grid Animation */
-        .grid-animate > * {
-          opacity: 0;
-          animation: gridItemFade 0.6s ease forwards;
-        }
-
-        @keyframes gridItemFade {
-          from {
-            opacity: 0;
-            transform: translateY(20px) scale(0.95);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
-        }
-
-        .grid-animate > *:nth-child(1) { animation-delay: 0.1s; }
-        .grid-animate > *:nth-child(2) { animation-delay: 0.2s; }
-        .grid-animate > *:nth-child(3) { animation-delay: 0.3s; }
-        .grid-animate > *:nth-child(4) { animation-delay: 0.4s; }
-        .grid-animate > *:nth-child(5) { animation-delay: 0.5s; }
-        .grid-animate > *:nth-child(6) { animation-delay: 0.6s; }
-
-        /* Shimmer Effect */
-        @keyframes shimmer {
-          0% { background-position: -1000px 0; }
-          100% { background-position: 1000px 0; }
-        }
-
-        .shimmer {
-          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-          background-size: 1000px 100%;
-          animation: shimmer 3s infinite;
-        }
-
-        /* Enhanced Link Underline */
-        .nav-link {
-          position: relative;
-          overflow: hidden;
-        }
-
-        .nav-link::after {
-          content: '';
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          width: 100%;
-          height: 2px;
-          background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
-          transform: translateX(-100%);
-          transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .nav-link:hover::after {
-          transform: translateX(0);
-        }
-      `}</style>
-
-      {/* Progress Bar */}
-      <div className="progress-bar" style={{ width: `${scrollProgress}%` }} />
-
-      {/* HEADER */}
-      <header className={`fixed top-0 left-0 right-0 z-50 navbar-light ${navbarScrolled ? 'scrolled' : ''}`}>
-        <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <a href="#" className="text-2xl font-bold gradient-text hover:scale-110 transition-transform font-display">
-              FT
-            </a>
-
-            <nav className="hidden md:flex gap-8 font-medium text-sm">
-              <a href="#intro" className="nav-link text-gray-700 hover:text-gray-900 transition-colors">
-                Home
-              </a>
-              <a href="#about" className="nav-link text-gray-700 hover:text-gray-900 transition-colors">
-                About
-              </a>
-              <a href="#projects" className="nav-link text-gray-700 hover:text-gray-900 transition-colors">
-                Projects
-              </a>
-              <a href="#services" className="nav-link text-gray-700 hover:text-gray-900 transition-colors">
-                Services
-              </a>
-              <a href="#contact" className="nav-link text-gray-700 hover:text-gray-900 transition-colors">
-                Contact
-              </a>
-            </nav>
-
-            <a href="#contact" className="hidden md:block btn-primary-light px-6 py-2.5 rounded-full text-sm font-semibold">
-              Let's Talk
-            </a>
-
-            <button className="md:hidden text-gray-700" onClick={handleMobileMenu}>
-              <i className="fas fa-bars text-xl"></i>
+    <div className="min-h-screen bg-white text-gray-900" style={{ fontFamily:"'Inter',system-ui,sans-serif" }}>
+      <style dangerouslySetInnerHTML={{ __html: STYLES }} />
+
+      {/* ════════════════ NAV ════════════════ */}
+      <nav className="fixed top-0 w-full z-50" style={{ background:'rgba(15,23,42,0.55)', backdropFilter:'blur(20px)', borderBottom:'1px solid rgba(255,255,255,0.07)' }}>
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex justify-between items-center">
+            <button onClick={() => scrollToSection('home')} className="text-2xl font-bold hover:scale-105 transition-transform" style={{ fontFamily:"'Syne',sans-serif" }}>
+              <span style={gTxt}>FT</span>
+            </button>
+
+            <div className="hidden md:flex items-center gap-8">
+              {['home','about','projects','skills','contact'].map((s) => (
+                <button key={s} onClick={() => scrollToSection(s)} className="capitalize font-medium relative group" style={{ color: activeSection===s?'#67e8f9':'#94a3b8', transition:'color .3s' }}>
+                  {s}
+                  <span className="absolute -bottom-1 left-0 h-0.5 rounded-full" style={{ background:'linear-gradient(90deg,#06b6d4,#14b8a6,#fb923c)', width: activeSection===s?'100%':'0%', transition:'width .4s cubic-bezier(.22,.68,0,1.2)' }} />
+                </button>
+              ))}
+            </div>
+
+            <div className="hidden md:flex items-center gap-4">
+              {[
+                { href:'https://github.com/farhantolkar22-bit', Icon:Github },
+                { href:'https://www.linkedin.com/in/farhan-tolkar-a15447379/', Icon:Linkedin },
+                { href:'mailto:farhantolkar22@gmail.com', Icon:Mail },
+              ].map(({ href, Icon }) => (
+                <a key={href} href={href} target="_blank" rel="noopener noreferrer" className="nav-icon"><Icon className="w-5 h-5" /></a>
+              ))}
+            </div>
+
+            <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="md:hidden nav-icon">
+              {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
-        </div>
-      </header>
 
-      {/* HERO */}
-      <section id="intro" className="light-gradient-bg min-h-screen flex items-center justify-center px-6 pt-20 relative overflow-hidden">
-        <div className="max-w-6xl mx-auto relative z-10 text-center">
-          
-          <div className="reveal">
-            <div className="inline-block mb-6 px-5 py-2.5 bg-white/90 backdrop-blur-md rounded-full border-2 border-white/50 shadow-lg">
-              <span className="text-gray-700 text-sm font-semibold">👋 Welcome to my portfolio</span>
+          {isMenuOpen && (
+            <div className="md:hidden mt-4 py-4" style={{ borderTop:'1px solid rgba(255,255,255,0.08)' }}>
+              {['home','about','projects','skills','contact'].map((s) => (
+                <button key={s} onClick={() => scrollToSection(s)} className="block w-full text-left py-2 capitalize text-gray-400 hover:text-cyan-300 transition-colors">{s}</button>
+              ))}
             </div>
-          </div>
-
-          <h1 className="text-6xl md:text-8xl lg:text-9xl font-display font-bold mb-6 reveal delay-100">
-            <span className="text-white drop-shadow-2xl">Farhan</span><br/>
-            <span className="text-white drop-shadow-2xl">Tolkar</span>
-          </h1>
-
-          <p className="text-xl md:text-2xl lg:text-3xl text-white/95 mb-4 font-bold reveal delay-200 drop-shadow-lg">
-            Creative Designer & Developer
-          </p>
-
-          <p className="text-base md:text-lg text-white/90 max-w-2xl mx-auto mb-12 leading-relaxed reveal delay-300 drop-shadow">
-            Crafting digital experiences that blend beautiful design with powerful functionality. 
-            Specialized in creating responsive web applications that users love.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center reveal delay-400">
-            <a href="#projects" className="btn-primary-light px-8 py-4 rounded-full font-semibold inline-flex items-center gap-2 shadow-2xl">
-              View My Work
-              <i className="fas fa-arrow-right"></i>
-            </a>
-
-            <a href="#contact" className="btn-outline-light px-8 py-4 rounded-full font-semibold shadow-2xl">
-              Get In Touch
-            </a>
-          </div>
-
-          <div className="mt-20 scroll-indicator reveal delay-500">
-            <i className="fas fa-chevron-down text-white text-2xl"></i>
-          </div>
+          )}
         </div>
+      </nav>
 
-        {/* Enhanced Decorative Elements */}
-        <div className="absolute top-20 right-10 w-72 h-72 bg-white/20 blob filter blur-3xl opacity-50 float"></div>
-        <div className="absolute bottom-20 left-10 w-80 h-80 bg-white/20 blob filter blur-3xl opacity-50 float" style={{ animationDelay: '2s' }}></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-white/10 blob filter blur-3xl opacity-30 float" style={{ animationDelay: '1s' }}></div>
-      </section>
+      {/* ════════════════ HERO ════════════════ */}
+      <section id="home" className="min-h-screen flex items-center justify-center pt-20 px-6 relative overflow-hidden" style={{ background:'linear-gradient(135deg,#0c1220 0%,#0f172a 40%,#1a2332 70%,#0c1220 100%)' }}>
 
-      {/* ABOUT */}
-      <section id="about" className="py-24 lg:py-32 bg-white relative overflow-hidden">
-        {/* Background Decoration */}
-        <div className="absolute top-0 right-0 w-1/3 h-1/3 bg-gradient-to-br from-purple-100/50 to-transparent blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 w-1/3 h-1/3 bg-gradient-to-tr from-blue-100/50 to-transparent blur-3xl"></div>
-        
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+        {/* subtle grid dots */}
+        <div className="dot-grid" />
 
-            {/* Left Column - Image */}
-            <div className="reveal">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-br from-indigo-200 via-purple-200 to-pink-200 rounded-3xl transform rotate-3 blur-sm"></div>
-                <div className="gradient-border-image relative">
-                  <div className="relative rounded-3xl overflow-hidden shadow-2xl">
-                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=1000&fit=crop" 
-                         alt="Farhan Tolkar"
-                         className="w-full h-[600px] object-cover image-hover" />
-                  </div>
-                </div>
-                <div className="absolute -bottom-6 -right-6 bg-white rounded-2xl p-6 shadow-2xl border-2 border-transparent"
-                     style={{ background: 'linear-gradient(white, white) padding-box, linear-gradient(135deg, #667eea, #764ba2) border-box' }}>
-                  <div className="flex items-center gap-3">
-                    <div className="w-3 h-3 bg-green-500 rounded-full pulse-ring"></div>
-                    <span className="text-sm font-bold text-gray-900">Available for work</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+        {/* animated blobs */}
+        <div className="absolute top-16 right-16 w-96 h-96 rounded-full anim-blob1" style={{ background:'radial-gradient(circle,rgba(6,182,212,0.35),transparent 70%)' }} />
+        <div className="absolute bottom-12 left-12 w-80 h-80 rounded-full anim-blob2" style={{ background:'radial-gradient(circle,rgba(20,184,166,0.28),transparent 70%)' }} />
+        <div className="absolute top-1/2 left-1/3 w-64 h-64 rounded-full anim-blob3" style={{ background:'radial-gradient(circle,rgba(251,146,60,0.18),transparent 70%)' }} />
 
-            {/* Right Column - Content */}
-            <div className="reveal delay-200">
-              <h2 className="text-4xl lg:text-5xl font-display font-bold mb-6 section-title text-gray-900">
-                About Me
-              </h2>
+        <div className="container mx-auto max-w-6xl relative z-10">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
 
-              <p className="text-lg text-gray-600 mb-6 leading-relaxed">
-                I'm a passionate web developer and designer with over 6 Months of experience in creating 
-                stunning digital experiences. My expertise lies in building responsive, user-friendly 
-                applications that not only look great but also deliver exceptional performance.
-              </p>
+            {/* ── left column ── */}
+            <div className="space-y-6" style={{ animation:'revealUp .85s cubic-bezier(.22,.68,0,1.2) both' }}>
 
-              <p className="text-lg text-gray-600 mb-8 leading-relaxed">
-                I specialize in modern web technologies including HTML, CSS, Tailwind CSS, JavaScript, React combined 
-                with a strong eye for UI/UX design. Every project is an opportunity to push boundaries 
-                and create something remarkable.
-              </p>
-
-              {/* Skills */}
-              <div className="mb-8">
-                <h3 className="text-sm font-bold text-gray-900 mb-4 uppercase tracking-wider">Core Skills</h3>
-                <div className="flex flex-wrap gap-3">
-                  {['HTML', 'WordPress', 'Tailwind CSS', 'UI/UX Design', 'Figma', 'C Programming'].map((skill) => (
-                    <div key={skill} className="skill-badge"><span>{skill}</span></div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Stats */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
-                <div className="stat-number delay-100 text-center p-4 rounded-xl bg-gradient-to-br from-blue-50 to-purple-50">
-                  <div className="text-3xl font-bold gradient-text">7+</div>
-                  <div className="text-sm text-gray-600 mt-1 font-semibold">Projects</div>
-                </div>
-                <div className="stat-number delay-200 text-center p-4 rounded-xl bg-gradient-to-br from-purple-50 to-pink-50">
-                  <div className="text-3xl font-bold gradient-text">6M</div>
-                  <div className="text-sm text-gray-600 mt-1 font-semibold">Experience</div>
-                </div>
-                <div className="stat-number delay-300 text-center p-4 rounded-xl bg-gradient-to-br from-pink-50 to-blue-50">
-                  <div className="text-3xl font-bold gradient-text">100%</div>
-                  <div className="text-sm text-gray-600 mt-1 font-semibold">Satisfaction</div>
-                </div>
-                <div className="stat-number delay-400 text-center p-4 rounded-xl bg-gradient-to-br from-blue-50 to-purple-50">
-                  <div className="text-3xl font-bold gradient-text">4+</div>
-                  <div className="text-sm text-gray-600 mt-1 font-semibold">Awards</div>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* PROJECTS */}
-      <section id="projects" className="py-24 lg:py-32 bg-gradient-to-br from-gray-50 via-purple-50/30 to-blue-50/30 relative overflow-hidden">
-        {/* Background Decoration */}
-        <div className="absolute top-20 left-10 w-64 h-64 bg-purple-200/30 blob filter blur-3xl"></div>
-        <div className="absolute bottom-20 right-10 w-64 h-64 bg-blue-200/30 blob filter blur-3xl"></div>
-        
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl lg:text-5xl font-display font-bold mb-4 section-title text-gray-900">
-              Projects
-            </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              A showcase of my recent work spanning web development, UI/UX design, and creative solutions
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 grid-animate">
-
-            {/* Project Cards */}
-            {[
-              {
-                title: 'Zomato App Clone',
-                category: 'UI/UX',
-                description: 'UI/UX design focused on clean layouts and smooth user flow',
-                image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&h=600&fit=crop'
-              },
-              {
-                title: 'Snapdeal Website Clone',
-                category: 'UI/UX',
-                description: 'UI/UX design focused on clean layouts and smooth user flow',
-                image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=600&fit=crop'
-              },
-              {
-                title: 'GOZOO Website Clone',
-                category: 'UI/UX',
-                description: 'UI/UX design focused on clean layouts and smooth user flow',
-                image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&h=600&fit=crop'
-              },
-              {
-                title: 'Travels Website Clone',
-                category: 'UI/UX',
-                description: 'UI/UX design focused on clean layouts and smooth user flow',
-                image: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&h=600&fit=crop'
-              },
-              {
-                title: 'RedBus Clone',
-                category: 'HTML/CSS',
-                description: 'Booking seats, Travels Adventure Booking',
-                image: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800&h=600&fit=crop',
-                tags: ['HTML', 'CSS']
-              },
-              {
-                title: 'Zara Website Clone',
-                category: 'UI/UX',
-                description: 'Branded Clothes for Mens, Womens, Kids',
-                image: 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800&h=600&fit=crop',
-                tags: ['Laravel', 'MySQL', 'Vue.js']
-              }
-            ].map((project, index) => (
-              <div key={index} className="project-card group relative rounded-2xl overflow-hidden card-light cursor-pointer">
-                <img src={project.image} 
-                     alt={project.title}
-                     className="w-full h-80 object-cover transition-transform duration-700 group-hover:scale-110" />
+              {/* badge */}
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium" style={{ background:'rgba(6,182,212,0.12)', color:'#67e8f9', border:'1px solid rgba(6,182,212,0.2)' }}>
                 
-                <div className="project-overlay absolute inset-0 flex flex-col justify-end p-8">
-                  <div className="project-content text-white">
-                    <div className="text-xs font-bold uppercase tracking-wider mb-2 opacity-90 flex items-center gap-2">
-                      <i className={`fas fa-${project.category === 'HTML/CSS' ? 'code' : 'paint-brush'}`}></i> {project.category}
-                    </div>
-                    <h3 className="text-2xl font-bold mb-2">{project.title}</h3>
-                    <p className="text-white/90 mb-4 text-sm">{project.description}</p>
-                    {project.tags && (
-                      <div className="flex flex-wrap gap-2">
-                        {project.tags.map((tag) => (
-                          <span key={tag} className="text-xs px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full border border-white/30">{tag}</span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
               </div>
-            ))}
 
+              {/* ── TYPING HEADING ── */}
+              <h1 className="text-5xl md:text-7xl font-bold leading-tight text-white" style={{ fontFamily:"'Syne',sans-serif" }}>
+                I'm{' '}
+                <span style={{ background:'linear-gradient(135deg,#67e8f9,#14b8a6,#fb923c)', backgroundSize:'200% 200%', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', animation:'gradientShift 4s ease infinite' }}>
+                  {typedName}
+                </span>
+                {!typingDone && <span className="caret" />}
+              </h1>
+
+              <p className="text-xl md:text-2xl font-light" style={{ color:'#7dd3fc', animation:'revealUp .7s .18s cubic-bezier(.22,.68,0,1.2) both' }}>
+                Full Stack Developer &amp; Creative Problem Solver
+              </p>
+              <p className="text-lg leading-relaxed" style={{ color:'#94a3b8', animation:'revealUp .7s .32s cubic-bezier(.22,.68,0,1.2) both' }}>
+                I craft beautiful UIs built with HTML, CSS, Tailwind CSS, JavaScript, Figma Design, Canva &amp; WordPress.
+              </p>
+
+              {/* buttons – staggered */}
+              <div className="flex flex-wrap gap-4 pt-2" style={{ animation:'revealUp .7s .46s cubic-bezier(.22,.68,0,1.2) both' }}>
+                <button onClick={() => scrollToSection('projects')} className="btn-primary px-8 py-4 text-white rounded-xl font-semibold flex items-center gap-2 group">
+                  View My Work
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
+                </button>
+                <button onClick={() => scrollToSection('contact')} className="btn-outline px-8 py-4 rounded-xl font-semibold relative z-10">
+                  Contact Me
+                </button>
+              </div>
+
+              {/* stats – staggered */}
+              <div className="flex items-center gap-8 pt-4" style={{ animation:'revealUp .7s .6s cubic-bezier(.22,.68,0,1.2) both' }}>
+                {[['6+','Months Exp'],['10+','Projects'],].map(([num, label], i) => (
+                  <div key={label} className="flex items-center gap-4">
+                    {i > 0 && <div className="w-px h-10" style={{ background:'rgba(255,255,255,0.12)' }} />}
+                    <div>
+                      <div className="text-3xl font-bold text-white" style={{ fontFamily:"'Syne',sans-serif" }}>{num}</div>
+                      <div className="text-sm" style={{ color:'#94a3b8' }}>{label}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ── PROFILE IMAGE (right) – delayed scale-in ── */}
+            <div className="relative flex items-center justify-center" style={{ animation:'revealPop .8s .25s cubic-bezier(.22,.68,0,1.2) both' }}>
+              {/* gradient border shell */}
+              <div className="absolute rounded-2xl" style={{ inset:'0', background:'linear-gradient(135deg,#06b6d4,#14b8a6,#fb923c,#06b6d4)', backgroundSize:'300% 300%', animation:'gradientShift 3s ease infinite', padding:'3px', zIndex:0, width:'100%', height:'100%' }}>
+                <div className="w-full h-full rounded-2xl" style={{ background:'#0f172a' }} />
+              </div>
+              {/* pulse ring */}
+              <div className="absolute rounded-2xl" style={{ inset:'2px', border:'1px solid rgba(6,182,212,0.35)', animation:'ringPulse 2.8s ease-out infinite', zIndex:1 }} />
+
+              {/* image */}
+              <div className="relative z-10 w-72 h-72 rounded-2xl overflow-hidden" style={{ boxShadow:'0 8px 50px rgba(6,182,212,0.3)' }}>
+                <img src="./farhan.png" alt="Farhan Tolkar – Developer" className="w-full h-full object-cover" style={{ transition:'transform .5s cubic-bezier(.22,.68,0,1.2)' }}
+                  onMouseEnter={e => e.currentTarget.style.transform='scale(1.06)'}
+                  onMouseLeave={e => e.currentTarget.style.transform='scale(1)'}
+                />
+              </div>
+
+              {/* floating badges */}
+              <div className="absolute z-20 px-3 py-1.5 rounded-lg text-xs font-bold text-white flex items-center gap-1.5" style={{ top:'-12px', right:'-16px', background:'linear-gradient(135deg,#06b6d4,#14b8a6)', boxShadow:'0 4px 14px rgba(6,182,212,0.4)', animation:'floatY 3s ease-in-out infinite' }}>
+                <Sparkles className="w-3 h-3" /> Open to work
+              </div>
+              <div className="absolute z-20 px-3 py-1.5 rounded-lg text-xs font-bold text-white flex items-center gap-1.5" style={{ bottom:'-12px', left:'-16px', background:'linear-gradient(135deg,#fb923c,#f59e0b)', boxShadow:'0 4px 14px rgba(251,146,60,0.4)', animation:'floatY 3.6s ease-in-out infinite 0.4s' }}>
+                <Code2 className="w-3 h-3" /> 10+ Projects
+              </div>
+
+              {/* blobs behind */}
+              <div className="absolute rounded-full opacity-20 blur-3xl anim-blob2" style={{ top:'16px', right:'-24px', width:'208px', height:'208px', background:'#06b6d4' }} />
+              <div className="absolute rounded-full opacity-15 blur-3xl anim-blob1" style={{ bottom:'-24px', left:'-24px', width:'176px', height:'176px', background:'#14b8a6' }} />
+            </div>
           </div>
         </div>
       </section>
 
-      {/* SERVICES */}
-      <section id="services" className="py-24 lg:py-32 bg-white relative overflow-hidden">
-        {/* Background Decoration */}
-        <div className="absolute top-0 left-0 w-1/2 h-1/2 bg-gradient-to-br from-blue-100/40 to-transparent blur-3xl"></div>
-        <div className="absolute bottom-0 right-0 w-1/2 h-1/2 bg-gradient-to-tl from-purple-100/40 to-transparent blur-3xl"></div>
-        
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl lg:text-5xl font-display font-bold mb-4 section-title text-gray-900">
-              What I Do
+      {/* ════════════════ ABOUT ════════════════ */}
+      <section id="about" className="py-24 px-6 bg-white">
+        <div className="container mx-auto max-w-6xl">
+
+          {/* heading – reveal */}
+          <div ref={aboutRef} className={`text-center mb-16 reveal reveal-up ${aboutVis?'visible':''}`}>
+            <h2 className="text-4xl md:text-5xl font-bold mb-4" style={{ fontFamily:"'Syne',sans-serif" }}>
+              About <span style={gTxt}>Me</span>
             </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Comprehensive services tailored to bring your digital vision to life
-            </p>
+            <p className="text-gray-500 text-lg max-w-2xl mx-auto">Passionate developer with a keen eye for design and a love for creating exceptional digital experiences</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 grid-animate">
-
-            {/* Service Cards */}
+          {/* 3 cards – staggered reveal */}
+          <div ref={cardsRef} className="grid md:grid-cols-3 gap-6 mb-16">
             {[
-              {
-                icon: 'code',
-                title: 'Web Development',
-                description: 'Building responsive, performant web applications using modern frameworks and best practices for optimal user experience.',
-                tags: ['HTML', 'Tailwind CSS', 'JavaScript'],
-                gradient: 'from-blue-500 via-blue-600 to-purple-600',
-                tagGradient: 'from-blue-50 to-purple-50',
-                tagColor: 'text-blue-700',
-                hoverColor: 'hover:text-blue-600'
-              },
-              {
-                icon: 'palette',
-                title: 'UI/UX Design',
-                description: 'Creating beautiful, intuitive interfaces that prioritize user experience and drive engagement through thoughtful design.',
-                tags: ['Figma', 'Canva'],
-                gradient: 'from-purple-500 via-purple-600 to-pink-600',
-                tagGradient: 'from-purple-50 to-pink-50',
-                tagColor: 'text-purple-700',
-                hoverColor: 'hover:text-purple-600'
-              },
-              {
-                icon: 'mobile-alt',
-                title: 'WordPress',
-                description: 'Using Drag-and-Drop making website, smooth animations, and intuitive interfaces.',
-                tags: ['Websites/Blogs'],
-                gradient: 'from-green-500 via-green-600 to-teal-600',
-                tagGradient: 'from-green-50 to-teal-50',
-                tagColor: 'text-green-700',
-                hoverColor: 'hover:text-green-600'
-              }
-            ].map((service, index) => (
-              <div key={index} className="service-card card-light rounded-2xl p-8 cursor-pointer group">
-                <div className={`service-icon w-16 h-16 flex items-center justify-center rounded-2xl bg-gradient-to-br ${service.gradient} text-white mb-6 text-2xl shadow-xl`}>
-                  <i className={`fas fa-${service.icon}`}></i>
+              { Icon:Code2,    title:'Clean Code',      desc:'Writing maintainable, scalable code following best practices and modern standards.',  accent:'#0891b2' },
+              { Icon:Palette,  title:'Beautiful Design', desc:'Creating intuitive, accessible interfaces that users love to interact with.',        accent:'#14b8a6' },
+              { Icon:Database, title:'UI / UX',          desc:'Full Figma design with prototype. WordPress for websites & blogs.',                  accent:'#fb923c' },
+            ].map(({ Icon, title, desc, accent }, i) => (
+              <div
+                key={title}
+                className={`reveal reveal-up card-hover p-8 bg-white rounded-2xl border border-gray-100`}
+                style={{
+                  boxShadow:'0 2px 12px rgba(0,0,0,0.04)',
+                  transitionDelay: cardsVis ? `${i*120}ms` : '0ms',
+                  opacity: cardsVis ? 1 : 0,
+                  transform: cardsVis ? 'translateY(0)' : 'translateY(38px)',
+                  transition:'opacity .7s cubic-bezier(.22,.68,0,1.2), transform .7s cubic-bezier(.22,.68,0,1.2), box-shadow .4s',
+                }}
+                onMouseEnter={e => e.currentTarget.style.boxShadow=`0 14px 36px ${accent}25`}
+                onMouseLeave={e => e.currentTarget.style.boxShadow='0 2px 12px rgba(0,0,0,0.04)'}
+              >
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110" style={{ background:`${accent}15` }}>
+                  <Icon className="w-6 h-6" style={{ color:accent }} />
                 </div>
-                <h3 className={`text-xl font-bold mb-3 text-gray-900 ${service.hoverColor} transition-colors`}>{service.title}</h3>
-                <p className="text-gray-600 leading-relaxed mb-4">
-                  {service.description}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {service.tags.map((tag) => (
-                    <span key={tag} className={`text-xs px-3 py-1.5 bg-gradient-to-r ${service.tagGradient} ${service.tagColor} rounded-full border border-${service.tagColor.split('-')[1]}-100 font-semibold`}>{tag}</span>
+                <h3 className="text-xl font-bold mb-2">{title}</h3>
+                <p className="text-gray-500 text-sm leading-relaxed">{desc}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* journey banner – reveal */}
+          <div ref={journeyRef} className={`reveal reveal-up ${journeyVis?'visible':''}`}>
+            <div className="rounded-2xl p-8 md:p-12 text-white relative overflow-hidden" style={{ background:'linear-gradient(135deg,#0c1220 0%,#0f172a 45%,#1a2332 100%)' }}>
+              {/* subtle inner dots */}
+              <div className="dot-grid" style={{ opacity:.5 }} />
+              <div className="relative z-10 grid md:grid-cols-2 gap-8 items-center">
+                <div>
+                  <h3 className="text-3xl font-bold mb-4" style={{ fontFamily:"'Syne',sans-serif" }}>My Journey</h3>
+                  <p className="leading-relaxed mb-4" style={{ color:'#7dd3fc' }}>With over 6 months of hands-on experience, I've worked with startups and enterprises to bring digital visions to life.</p>
+                  <p className="leading-relaxed" style={{ color:'#94a3b8' }}>I specialise in modern technologies like React, Node.js, HTML, Tailwind CSS and JavaScript. When I'm not coding, I contribute to open source and write technical articles.</p>
+                </div>
+                <div className="space-y-4">
+                  {['Full Stack Development','UI/UX Design','API Development','Server Management'].map((item, i) => (
+                    <div key={item} className="flex items-center gap-3" style={{ color:'#94a3b8', opacity: journeyVis?1:0, transform: journeyVis?'translateX(0)':'translateX(24px)', transition:`opacity .6s ${i*100}ms cubic-bezier(.22,.68,0,1.2), transform .6s ${i*100}ms cubic-bezier(.22,.68,0,1.2)` }}>
+                      <div className="w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0" style={{ background:'rgba(6,182,212,0.18)' }}>
+                        <Check className="w-4 h-4" style={{ color:'#67e8f9' }} />
+                      </div>
+                      <span>{item}</span>
+                    </div>
                   ))}
                 </div>
               </div>
-            ))}
-
+            </div>
           </div>
         </div>
       </section>
 
-      {/* CONTACT */}
-      <section id="contact" className="py-24 lg:py-32 bg-gradient-to-br from-purple-50/50 via-white to-blue-50/50 relative overflow-hidden">
-        {/* Background Decoration */}
-        <div className="absolute top-10 right-10 w-72 h-72 bg-purple-200/30 blob filter blur-3xl"></div>
-        <div className="absolute bottom-10 left-10 w-72 h-72 bg-blue-200/30 blob filter blur-3xl"></div>
-        
-        <div className="max-w-4xl mx-auto px-6 lg:px-8 text-center relative z-10">
-          <h2 className="text-4xl lg:text-5xl font-display font-bold mb-4 section-title text-gray-900">
-            Let's Work Together
-          </h2>
-          <p className="text-lg text-gray-600 mb-12 max-w-2xl mx-auto">
-            Have a project in mind? I'm always open to discussing new opportunities and creative collaborations.
-          </p>
+      {/* ════════════════ PROJECTS ════════════════ */}
+      <section id="projects" className="py-24 px-6" style={{ background:'linear-gradient(180deg,#f8fafc 0%,#f1f5f9 100%)' }}>
+        <div className="container mx-auto max-w-7xl">
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-            
-            {/* Contact Cards */}
-            {[
-              {
-                icon: 'phone',
-                title: 'Phone',
-                description: 'Give me a call',
-                contact: '+1 (234) 567-890',
-                href: 'tel:+1234567890',
-                gradient: 'from-green-500 via-green-600 to-emerald-600',
-                hoverColor: 'group-hover:text-green-600'
-              },
-              {
-                icon: 'envelope',
-                title: 'Email',
-                description: 'Send me an email',
-                contact: 'contact@farhantolkar.com',
-                href: 'mailto:contact@farhantolkar.com',
-                gradient: 'from-red-500 via-pink-600 to-purple-600',
-                hoverColor: 'group-hover:text-pink-600'
-              },
-              {
-                icon: 'github',
-                iconType: 'fab',
-                title: 'GitHub',
-                description: 'Check out my open source work',
-                contact: '@farhantolkar22-bit',
-                href: 'https://github.com/farhantolkar22-bit',
-                gradient: 'from-gray-800 via-gray-900 to-black',
-                hoverColor: 'group-hover:text-gray-900',
-                external: true
-              },
-              {
-                icon: 'linkedin-in',
-                iconType: 'fab',
-                title: 'LinkedIn',
-                description: "Let's connect professionally",
-                contact: '@farhan-tolkar',
-                href: 'https://linkedin.com/in/farhan-tolkar',
-                gradient: 'from-blue-600 via-blue-700 to-blue-800',
-                hoverColor: 'group-hover:text-blue-600',
-                external: true
-              }
-            ].map((contact, index) => (
-              <a key={index} href={contact.href} 
-                 {...(contact.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-                 className="group card-light rounded-2xl p-8 text-left">
-                <div className="flex items-start gap-4">
-                  <div className={`w-14 h-14 flex items-center justify-center rounded-xl bg-gradient-to-br ${contact.gradient} text-white text-xl flex-shrink-0 group-hover:scale-110 transition-transform shadow-xl`}>
-                    <i className={`${contact.iconType || 'fas'} fa-${contact.icon}`}></i>
+          <div ref={projRef} className={`text-center mb-16 reveal reveal-up ${projVis?'visible':''}`}>
+            <h2 className="text-4xl md:text-5xl font-bold mb-4" style={{ fontFamily:"'Syne',sans-serif" }}>
+              Featured <span style={gTxt}>Projects</span>
+            </h2>
+            <p className="text-gray-500 text-lg max-w-2xl mx-auto">A showcase of my recent work and successful collaborations</p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {projects.map((project, i) => (
+              <div
+                key={i}
+                className="group bg-white rounded-2xl overflow-hidden border border-gray-100 card-hover"
+                style={{
+                  boxShadow:'0 2px 10px rgba(0,0,0,0.05)',
+                  opacity: projVis ? 1 : 0,
+                  transform: projVis ? 'translateY(0)' : 'translateY(42px)',
+                  transition:`opacity .7s ${i*100}ms cubic-bezier(.22,.68,0,1.2), transform .7s ${i*100}ms cubic-bezier(.22,.68,0,1.2), box-shadow .4s`,
+                }}
+                onMouseEnter={e => e.currentTarget.style.boxShadow='0 18px 44px rgba(6,182,212,0.16)'}
+                onMouseLeave={e => e.currentTarget.style.boxShadow='0 2px 10px rgba(0,0,0,0.05)'}
+              >
+                <div className="relative h-48 overflow-hidden bg-gray-100">
+                  <img src={project.image} alt={project.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                  <div className="absolute inset-0 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ background:'linear-gradient(to top,rgba(12,18,32,0.88),rgba(12,18,32,0.4))' }}>
+                    <button className="proj-btn p-3 rounded-lg" title="View Project"><Eye className="w-5 h-5" /></button>
+                    <button className="proj-btn p-3 rounded-lg" title="Open Live"><ExternalLink className="w-5 h-5" /></button>
                   </div>
-                  <div className="flex-1">
-                    <h3 className="text-lg font-bold mb-1 text-gray-900">{contact.title}</h3>
-                    <p className="text-sm text-gray-600 mb-2">{contact.description}</p>
-                    <p className="text-sm font-mono text-gray-500">{contact.contact}</p>
-                  </div>
-                  <i className={`fas fa-arrow-right text-gray-400 ${contact.hoverColor} group-hover:translate-x-1 transition-all`}></i>
                 </div>
-              </a>
+                <div className="p-6">
+                  <h3 className="text-lg font-bold mb-1 group-hover:text-cyan-600 transition-colors">{project.title}</h3>
+                  <p className="text-gray-500 text-sm mb-4 leading-relaxed">{project.description}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {project.tags.map((tag, j) => (
+                      <span key={j} className="px-3 py-1 rounded-full text-xs font-medium" style={{ background:'linear-gradient(135deg,#ecfdf5,#cffafe)', color:'#0891b2' }}>{tag}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
             ))}
-
           </div>
-
-          {/* CTA */}
-          <div className="card-light rounded-3xl p-12 shadow-2xl relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-purple-50/50 to-blue-50/50"></div>
-            <div className="relative z-10">
-              <h3 className="text-2xl font-bold mb-4 text-gray-900">Ready to start a project?</h3>
-              <p className="text-gray-600 mb-8 max-w-lg mx-auto">
-                I'm currently available for freelance work and always interested in hearing about new opportunities.
-              </p>
-              <a href="mailto:contact@farhantolkar.com" className="btn-primary-light px-8 py-4 rounded-full font-semibold inline-flex items-center gap-2 shadow-2xl">
-                <i className="fas fa-envelope"></i>
-                Send me an email
-              </a>
-            </div>
-          </div>
-
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer className="bg-white border-t-2 border-transparent relative"
-              style={{ borderImage: 'linear-gradient(90deg, #667eea, #764ba2, #f093fb) 1' }}>
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 py-12">
-          
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-8">
-            
-            <div className="text-center md:text-left">
-              <h3 className="text-2xl font-bold gradient-text font-display mb-2">
-                Farhan Tolkar
-              </h3>
-              <p className="text-sm text-gray-600 font-medium">
-                Creative Designer & Developer
-              </p>
-            </div>
+      {/* ════════════════ SKILLS ════════════════ */}
+      <section id="skills" className="py-24 px-6 bg-white">
+        <div className="container mx-auto max-w-6xl">
 
-            <div className="flex gap-4">
-              <a href="https://github.com/farhantolkar22-bit" target="_blank" rel="noopener noreferrer"
-                 className="w-12 h-12 flex items-center justify-center rounded-full bg-gradient-to-br from-gray-100 to-gray-200 text-gray-600 hover:from-gray-800 hover:to-gray-900 hover:text-white transition-all duration-300 hover:scale-110 shadow-lg">
-                <i className="fab fa-github text-lg"></i>
-              </a>
-
-              <a href="https://linkedin.com/in/farhan-tolkar" target="_blank" rel="noopener noreferrer"
-                 className="w-12 h-12 flex items-center justify-center rounded-full bg-gradient-to-br from-blue-100 to-blue-200 text-blue-600 hover:from-blue-600 hover:to-blue-700 hover:text-white transition-all duration-300 hover:scale-110 shadow-lg">
-                <i className="fab fa-linkedin-in text-lg"></i>
-              </a>
-            </div>
+          <div className={`text-center mb-16 reveal reveal-up ${skillsVis?'visible':''}`} style={{ opacity:skillsVis?1:0, transform:skillsVis?'translateY(0)':'translateY(38px)', transition:'opacity .7s cubic-bezier(.22,.68,0,1.2), transform .7s cubic-bezier(.22,.68,0,1.2)' }}>
+            <h2 className="text-4xl md:text-5xl font-bold mb-4" style={{ fontFamily:"'Syne',sans-serif" }}>
+              Skills &amp; <span style={gTxt}>Expertise</span>
+            </h2>
+            <p className="text-gray-500 text-lg max-w-2xl mx-auto">Constantly learning and adapting to the latest technologies</p>
           </div>
 
-          <div className="border-t-2 border-transparent pt-8"
-               style={{ borderImage: 'linear-gradient(90deg, transparent, #667eea, transparent) 1' }}>
-            <p className="text-center text-sm text-gray-600">
-              © 2026 Farhan Tolkar. All rights reserved. Built with passion and precision.
-            </p>
+          {/* skill bars – animate width on scroll */}
+          <div ref={skillsRef} className="grid md:grid-cols-2 gap-5 mb-16">
+            {skills.map((skill, i) => (
+              <div
+                key={i}
+                className="p-5 bg-white rounded-xl border border-gray-100 card-hover"
+                style={{
+                  boxShadow:'0 2px 8px rgba(0,0,0,0.04)',
+                  opacity: skillsVis ? 1 : 0,
+                  transform: skillsVis ? 'translateY(0)' : 'translateY(28px)',
+                  transition:`opacity .65s ${i*90}ms cubic-bezier(.22,.68,0,1.2), transform .65s ${i*90}ms cubic-bezier(.22,.68,0,1.2), box-shadow .4s`,
+                }}
+                onMouseEnter={e => e.currentTarget.style.boxShadow='0 8px 24px rgba(6,182,212,0.14)'}
+                onMouseLeave={e => e.currentTarget.style.boxShadow='0 2px 8px rgba(0,0,0,0.04)'}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div style={{ color:'#0891b2' }}>{skill.icon}</div>
+                    <span className="font-semibold">{skill.name}</span>
+                  </div>
+                  <span className="text-sm font-bold" style={{ color:'#0891b2' }}>{skill.level}%</span>
+                </div>
+                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="h-full rounded-full" style={{
+                    width: skillsVis ? `${skill.level}%` : '0%',
+                    background:'linear-gradient(90deg,#06b6d4,#14b8a6,#fb923c)',
+                    transition:`width 1.1s ${i*90}ms cubic-bezier(.22,.68,0,1.2)`,
+                  }} />
+                </div>
+              </div>
+            ))}
           </div>
 
+          {/* feature cards */}
+          <div ref={featsRef} className="grid md:grid-cols-3 gap-6">
+            {[
+              { emoji:'⚡', title:'Fast Performance', desc:'Optimized for speed and efficiency' },
+              { emoji:'📱', title:'Responsive Design', desc:'Perfect on any device or screen size' },
+              { emoji:'🔒', title:'Secure & Scalable',  desc:'Built with best practices in mind' },
+            ].map(({ emoji, title, desc }, i) => (
+              <div
+                key={title}
+                className="text-center p-8 rounded-2xl border border-gray-100 card-hover"
+                style={{
+                  background:'linear-gradient(135deg,#f0fdff,#fff)',
+                  boxShadow:'0 2px 8px rgba(0,0,0,0.04)',
+                  opacity: featsVis ? 1 : 0,
+                  transform: featsVis ? 'translateY(0)' : 'translateY(34px)',
+                  transition:`opacity .7s ${i*130}ms cubic-bezier(.22,.68,0,1.2), transform .7s ${i*130}ms cubic-bezier(.22,.68,0,1.2), box-shadow .4s`,
+                }}
+                onMouseEnter={e => e.currentTarget.style.boxShadow='0 12px 30px rgba(6,182,212,0.15)'}
+                onMouseLeave={e => e.currentTarget.style.boxShadow='0 2px 8px rgba(0,0,0,0.04)'}
+              >
+                <div className="text-4xl mb-3" style={{ display:'inline-block', animation:'floatY 2.5s ease-in-out infinite' }}>{emoji}</div>
+                <h3 className="text-lg font-bold mb-1">{title}</h3>
+                <p className="text-gray-500 text-sm">{desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ════════════════ CONTACT ════════════════ */}
+      <section id="contact" className="py-24 px-6 relative overflow-hidden" style={{ background:'linear-gradient(135deg,#0c1220 0%,#0f172a 40%,#1a2332 100%)' }}>
+        <div className="dot-grid" style={{ opacity:.4 }} />
+        <div className="absolute rounded-full blur-3xl anim-blob2" style={{ top:'0', right:'0', width:'384px', height:'384px', opacity:'0.12', background:'#14b8a6' }} />
+        <div className="absolute rounded-full blur-3xl anim-blob1" style={{ bottom:'0', left:'0', width:'320px', height:'320px', opacity:'0.1', background:'#06b6d4' }} />
+
+        <div ref={contactRef} className="container mx-auto max-w-4xl relative z-10">
+          <div className={`text-center mb-14 reveal reveal-up ${contactVis?'visible':''}`}>
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-white" style={{ fontFamily:"'Syne',sans-serif" }}>Let's Work Together</h2>
+            <p className="text-lg max-w-2xl mx-auto" style={{ color:'#7dd3fc' }}>Have a project in mind? I'd love to hear about it.</p>
+          </div>
+
+          <div className={`reveal reveal-up ${contactVis?'visible':''}`} style={{ transitionDelay:'150ms' }}>
+            <div className="rounded-2xl p-8 md:p-10" style={{ background:'rgba(255,255,255,0.05)', backdropFilter:'blur(14px)', border:'1px solid rgba(255,255,255,0.1)' }}>
+              <div className="grid md:grid-cols-3 gap-6">
+                {[
+                  { Icon:Mail,   label:'Email',    value:'farhantolkar22@gmail.com' },
+                  { Icon:Phone,  label:'Phone',    value:'8010491875' },
+                  { Icon:MapPin, label:'Location', value:'Mumbai, India' },
+                ].map(({ Icon, label, value }, i) => (
+                  <div key={label} className="flex items-center gap-4" style={{ opacity:contactVis?1:0, transform:contactVis?'translateY(0)':'translateY(20px)', transition:`opacity .6s ${200+i*120}ms cubic-bezier(.22,.68,0,1.2), transform .6s ${200+i*120}ms cubic-bezier(.22,.68,0,1.2)` }}>
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background:'rgba(6,182,212,0.14)' }}>
+                      <Icon className="w-5 h-5" style={{ color:'#67e8f9' }} />
+                    </div>
+                    <div>
+                      <div className="text-xs uppercase tracking-wider mb-0.5" style={{ color:'#7dd3fc' }}>{label}</div>
+                      <div className="text-white font-medium text-sm">{value}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-8 pt-8 flex justify-center gap-4" style={{ borderTop:'1px solid rgba(255,255,255,0.08)' }}>
+                {[
+                  { href:'https://github.com/farhantolkar22-bit', Icon:Github,   label:'GitHub' },
+                  { href:'https://www.linkedin.com/in/farhan-tolkar-a15447379/', Icon:Linkedin, label:'LinkedIn' },
+                  { href:'mailto:farhantolkar22@gmail.com',       Icon:Mail,     label:'Email' },
+                ].map(({ href, Icon, label }) => (
+                  <a key={label} href={href} target="_blank" rel="noopener noreferrer" className="social-pill flex items-center gap-2 px-5 py-2.5 rounded-lg">
+                    <Icon className="w-4 h-4" /><span className="text-sm font-medium">{label}</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ════════════════ FOOTER ════════════════ */}
+      <footer className="py-5 px-6" style={{ background:'#080e1a', borderTop:'1px solid rgba(255,255,255,0.05)' }}>
+        <div className="container mx-auto max-w-6xl">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="text-lg font-bold" style={{ ...gTxt, fontFamily:"'Syne',sans-serif" }}>FT</span>
+              <span className="text-gray-600 text-xs">© {new Date().getFullYear()} Farhan Tolkar. All rights reserved.</span>
+            </div>
+            <div className="flex items-center gap-6">
+              {['Home','About','Projects','Skills','Contact'].map((item) => (
+                <button key={item} onClick={() => scrollToSection(item.toLowerCase())} className="footer-link text-xs">{item}</button>
+              ))}
+            </div>
+            <div className="flex items-center gap-3">
+              {[
+                { href:'https://github.com/farhantolkar22-bit', Icon:Github },
+                { href:'https://www.linkedin.com/in/farhan-tolkar-a15447379/', Icon:Linkedin },
+                { href:'mailto:farhantolkar22@gmail.com', Icon:Mail },
+              ].map(({ href, Icon }) => (
+                <a key={href} href={href} target="_blank" rel="noopener noreferrer" className="nav-icon"><Icon className="w-4 h-4" /></a>
+              ))}
+            </div>
+          </div>
         </div>
       </footer>
-
-      {/* Scroll to Top Button */}
-      <button 
-        onClick={scrollToTop}
-        className="fixed bottom-8 right-8 w-14 h-14 btn-primary-light rounded-full shadow-2xl z-50 transition-all duration-300 hover:scale-110"
-        style={{ 
-          opacity: showScrollTop ? 1 : 0,
-          pointerEvents: showScrollTop ? 'auto' : 'none'
-        }}>
-        <i className="fas fa-arrow-up text-lg"></i>
-      </button>
     </div>
   );
-};
+}
 
-export default Portfolio;
+export default App;
