@@ -11,7 +11,7 @@ import {
 /* ═══════════════════════════════════════════
    DATA
    ═══════════════════════════════════════════ */
-const NAV_LINKS = ['home', 'about', 'projects', 'skills', 'testimonials', 'contact'];
+const NAV_LINKS = ['home', 'about', 'projects', 'skills', 'contact'];
 
 const SOCIAL_LINKS = [
   { href: 'https://github.com/farhantolkar22-bit', Icon: Github, label: 'GitHub' },
@@ -29,12 +29,12 @@ const PROJECTS = [
 
 const SKILLS = [
   { name: 'Tailwind CSS', level: 75, Icon: Code2, color: '#06b6d4' },
-  { name: 'HTML & CSS', level: 80, Icon: Code2, color: '#e34c26' },
-  { name: 'WordPress', level: 80, Icon: Palette, color: '#21759b' },
-  { name: 'JavaScript', level: 80, Icon: Palette, color: '#f7df1e' },
+  { name: 'HTML & CSS', level: 78, Icon: Code2, color: '#e34c26' },
+  { name: 'WordPress', level: 83, Icon: Palette, color: '#21759b' },
+  { name: 'JavaScript', level: 40, Icon: Palette, color: '#f7df1e' },
   { name: 'Figma', level: 85, Icon: Code2, color: '#f24e1e' },
   { name: 'React & Next.js', level: 25, Icon: Database, color: '#61dafb' },
-  { name: 'UI/UX Design', level: 89, Icon: Palette, color: '#ff6b6b' },
+  { name: 'UI/UX Design', level: 90, Icon: Palette, color: '#ff6b6b' },
   { name: 'Node.js & Express', level: 20, Icon: Database, color: '#68a063' },
 ];
 
@@ -735,10 +735,7 @@ export default function Page() {
                   animation: 'scaleIn 0.8s cubic-bezier(.22,.68,0,1.2) both 0.3s'
                 }}
               >
-                <span className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-                  Available for Freelance
-                </span>
+                
               </div>
 
               <h1 className="text-5xl md:text-7xl font-bold leading-tight text-white" style={{ fontFamily: "'Syne',sans-serif" }}>
@@ -1200,7 +1197,7 @@ export default function Page() {
           </div>
           <div className="text-center mt-8 pt-8" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
             <p className="text-gray-600 text-sm">
-              Built with <span className="text-red-400">❤</span> using React & Tailwind CSS
+               <span className="text-red-400">❤</span> 
             </p>
           </div>
         </div>
